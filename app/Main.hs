@@ -42,8 +42,12 @@ handleRequest t = do
     waitForFin conn
     close conn
 
+waitForRequests :: Socket -> IO ()
+waitForRequests sock = do
+    withAsyncBound (fst <$> accept sock) handleRequest
+    waitForRequests sock
+
 main :: IO ()
 main = do
     sock <- getSocket
-    withAsync (fst <$> accept sock) handleRequest
-    close sock
+    withAsyncBound (waitForRequests sock) (const $ void getChar >> close sock)
